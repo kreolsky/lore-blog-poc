@@ -1,0 +1,54 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import { formatDate } from '../format-date.ts';
+
+const byOrder = (a: any, b: any) =>
+  a.data.order < b.data.order ? -1 : a.data.order > b.data.order ? 1 : 0;
+
+const posts = (await getCollection('lore')).sort(byOrder);
+const uncategorised = posts.filter((p: any) => p.data.category === null);
+
+const categories = new Map<string, { order: string; posts: any[] }>();
+for (const p of posts) {
+  if (p.data.category === null) continue;
+  const entry =
+    categories.get(p.data.category) ?? { order: p.data.categoryOrder ?? p.data.order, posts: [] };
+  entry.posts.push(p);
+  categories.set(p.data.category, entry);
+}
+const groups = [...categories.entries()].sort((a, b) =>
+  a[1].order < b[1].order ? -1 : a[1].order > b[1].order ? 1 : 0,
+);
+---
+
+<Base title="Lore Blog PoC">
+  <h1>Lore Blog PoC</h1>
+  {uncategorised.length > 0 && (
+    <ul class="post-list">
+      {uncategorised.map((p: any) => (
+        <li>
+          <a href={`/posts/${p.id}/`}>
+            <span class="post-title">{p.data.title}</span>
+            {p.data.date && <time datetime={p.data.date}>{formatDate(p.data.date)}</time>}
+          </a>
+        </li>
+      ))}
+    </ul>
+  )}
+  {groups.map(([name, group]) => (
+    <section>
+      <h2>{name}</h2>
+      <ul class="post-list">
+        {group.posts.map((p: any) => (
+          <li>
+            <a href={`/posts/${p.id}/`}>
+            <span class="post-title">{p.data.title}</span>
+            {p.data.date && <time datetime={p.data.date}>{formatDate(p.data.date)}</time>}
+          </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  ))}
+</Base>

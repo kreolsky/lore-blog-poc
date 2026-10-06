@@ -1,0 +1,38 @@
+---
+import { getCollection, render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import { formatDate } from '../../format-date.ts';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('lore');
+  return posts.map((p) => ({ params: { slug: p.id }, props: { post: p } }));
+}
+
+const { post } = Astro.props;
+const { Content, headings } = await render(post);
+const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
+---
+
+<Base title={post.data.title}>
+  <article>
+    <h1>{post.data.title}</h1>
+    {post.data.date && (
+      <p class="post-date"><time datetime={post.data.date}>{formatDate(post.data.date)}</time></p>
+    )}
+    {toc.length > 0 && (
+      <nav class="toc">
+        <p class="toc-title">Содержание</p>
+        <ul>
+          {toc.map((h) => (
+            <li class={`depth-${h.depth}`}>
+              <a href={`#${h.slug}`}>{h.text}</a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    )}
+    <div class="prose">
+      <Content />
+    </div>
+  </article>
+</Base>
